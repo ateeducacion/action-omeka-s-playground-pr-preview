@@ -1,0 +1,11 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "npm"
+    directory: "/.github/actions/facturascripts-playground-pr-preview"
+    schedule:
+      interval: "weekly"
