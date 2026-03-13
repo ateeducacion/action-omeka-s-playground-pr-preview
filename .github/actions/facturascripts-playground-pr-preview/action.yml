@@ -28,7 +28,7 @@ inputs:
   image-url:
     description: 'URL of the image to display in the PR comment'
     required: false
-    default: 'https://raw.githubusercontent.com/erseco/facturascripts-playground/main/public/logo.png'
+    default: 'https://raw.githubusercontent.com/erseco/facturascripts-playground/refs/heads/main/ogimage.png'
   comment-marker:
     description: 'Hidden HTML marker used to identify the sticky comment'
     required: false

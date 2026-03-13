@@ -23720,7 +23720,7 @@ async function run() {
     const description = getInput("description") || "Preview this PR in FacturaScripts Playground";
     const author = getInput("author") || "erseco";
     const playgroundUrl = getInput("playground-url") || "https://erseco.github.io/facturascripts-playground/";
-    const imageUrl = getInput("image-url") || "https://raw.githubusercontent.com/erseco/facturascripts-playground/main/public/logo.png";
+    const imageUrl = getInput("image-url") || "https://raw.githubusercontent.com/erseco/facturascripts-playground/refs/heads/main/ogimage.png";
     const commentMarker = getInput("comment-marker") || "facturascripts-playground-preview";
     const context3 = context2;
     const prNumber = context3.payload.pull_request && context3.payload.pull_request.number;

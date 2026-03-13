@@ -16,7 +16,7 @@ async function run() {
       'https://erseco.github.io/facturascripts-playground/';
     const imageUrl =
       core.getInput('image-url') ||
-      'https://raw.githubusercontent.com/erseco/facturascripts-playground/main/public/logo.png';
+      'https://raw.githubusercontent.com/erseco/facturascripts-playground/refs/heads/main/ogimage.png';
     const commentMarker =
       core.getInput('comment-marker') || 'facturascripts-playground-preview';
 
