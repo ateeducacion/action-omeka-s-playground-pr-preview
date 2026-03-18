@@ -1,14 +1,25 @@
-name: 'FacturaScripts Playground PR Preview'
-description: 'Posts or updates a sticky PR comment with a FacturaScripts Playground preview link'
-author: 'erseco'
+name: 'Omeka S Playground PR Preview'
+description: 'Posts or updates a sticky PR comment with an Omeka S Playground preview link'
+author: 'ateeducacion'
 
 inputs:
   github-token:
     description: 'GitHub token with pull-requests:write permission'
     required: true
   zip-url:
-    description: 'URL of the plugin/extension ZIP file to load in the playground'
+    description: 'URL of the primary module or theme ZIP file to load in the playground'
     required: true
+  addon-name:
+    description: 'Optional explicit Omeka addon name for the primary ZIP. Recommended for GitHub archive URLs.'
+    required: false
+  addon-type:
+    description: 'Type of the primary ZIP addon'
+    required: false
+    default: 'module'
+  addon-state:
+    description: 'State for the primary module ZIP. Ignored when addon-type is theme.'
+    required: false
+    default: 'activate'
   title:
     description: 'Title for the blueprint meta'
     required: false
@@ -16,31 +27,46 @@ inputs:
   description:
     description: 'Description for the blueprint meta'
     required: false
-    default: 'Preview this PR in FacturaScripts Playground'
+    default: 'Preview this PR in Omeka S Playground'
   author:
     description: 'Author for the blueprint meta'
     required: false
-    default: 'erseco'
+    default: 'ateeducacion'
   playground-url:
-    description: 'Base URL of the FacturaScripts Playground'
+    description: 'Base URL of the Omeka S Playground'
     required: false
-    default: 'https://erseco.github.io/facturascripts-playground/'
+    default: 'https://ateeducacion.github.io/omeka-s-playground/'
   image-url:
     description: 'URL of the image to display in the PR comment'
     required: false
-    default: 'https://raw.githubusercontent.com/erseco/facturascripts-playground/refs/heads/main/ogimage.png'
+    default: 'https://raw.githubusercontent.com/ateeducacion/omeka-s-playground/refs/heads/main/ogimage.png'
   comment-marker:
     description: 'Hidden HTML marker used to identify the sticky comment'
     required: false
-    default: 'facturascripts-playground-preview'
-  extra-plugins:
-    description: 'Optional JSON array of additional plugins to append to the generated blueprint'
+    default: 'omeka-s-playground-preview'
+  extra-modules:
+    description: 'Optional JSON array of additional blueprint modules to append after the primary addon'
     required: false
-  seed-json:
-    description: 'Optional JSON object with seed data for customers, suppliers, products, or other supported seed values'
+  extra-themes:
+    description: 'Optional JSON array of additional blueprint themes to append to the generated blueprint'
+    required: false
+  extra-plugins:
+    description: 'Deprecated alias for extra-modules'
+    required: false
+  users-json:
+    description: 'Optional JSON array for blueprint users'
+    required: false
+  item-sets-json:
+    description: 'Optional JSON array for blueprint itemSets'
+    required: false
+  items-json:
+    description: 'Optional JSON array for blueprint items'
+    required: false
+  site-json:
+    description: 'Optional JSON object for blueprint site configuration'
     required: false
   landing-page:
-    description: 'Optional landing page path to open inside FacturaScripts Playground'
+    description: 'Optional landing page path to open inside Omeka S Playground'
     required: false
   debug-enabled:
     description: 'Optional boolean to enable or disable Playground debug mode'
@@ -54,8 +80,11 @@ inputs:
   site-timezone:
     description: 'Optional timezone for the generated blueprint siteOptions'
     required: false
+  login-email:
+    description: 'Optional login email for the generated blueprint'
+    required: false
   login-username:
-    description: 'Optional login username for the generated blueprint'
+    description: 'Deprecated alias for login-email'
     required: false
   login-password:
     description: 'Optional login password for the generated blueprint'

@@ -23687,6 +23687,7 @@ function toBase64Url(str) {
 function isPlainObject3(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
+var OMEKA_BLUEPRINT_SCHEMA_URL = "https://ateeducacion.github.io/omeka-s-playground/assets/blueprints/blueprint-schema.json";
 function parseJsonInput(name, value, expectedType) {
   if (!value || !value.trim()) {
     return void 0;
@@ -23720,17 +23721,116 @@ function parseOptionalBoolean(value, name) {
     `Input "${name}" must be a boolean value such as "true" or "false".`
   );
 }
-function dedupePlugins(plugins, name = "plugins") {
-  return [
-    ...new Set(
-      plugins.map((plugin) => {
-        if (typeof plugin !== "string") {
-          throw new Error(`Each entry in "${name}" must be a string.`);
+function inferAddonNameFromZipUrl(zipUrl) {
+  try {
+    const url = new URL(zipUrl);
+    const segments = url.pathname.split("/").filter(Boolean);
+    if (["github.com", "www.github.com", "codeload.github.com"].includes(
+      url.hostname
+    ) && segments.length >= 2 && (segments.includes("archive") || segments.includes("zip"))) {
+      return decodeURIComponent(segments[1]).trim();
+    }
+    const fileName = decodeURIComponent(segments.at(-1) || "").replace(/\.zip$/iu, "").trim();
+    return fileName || void 0;
+  } catch {
+    return void 0;
+  }
+}
+function normalizeAddonEntry(addon, name) {
+  if (typeof addon === "string") {
+    const normalized2 = addon.trim();
+    if (!normalized2) {
+      throw new Error(`Each entry in "${name}" must not be empty.`);
+    }
+    return normalized2;
+  }
+  if (!isPlainObject3(addon)) {
+    throw new Error(
+      `Each entry in "${name}" must be either a string or an object.`
+    );
+  }
+  const addonName = typeof addon.name === "string" ? addon.name.trim() : "";
+  if (!addonName) {
+    throw new Error(
+      `Each object entry in "${name}" must include a non-empty "name".`
+    );
+  }
+  const normalized = {
+    ...addon,
+    name: addonName
+  };
+  if ("state" in normalized) {
+    if (typeof normalized.state !== "string" || !normalized.state.trim()) {
+      throw new Error(`Each object entry in "${name}" must have a valid "state".`);
+    }
+    normalized.state = normalized.state.trim();
+  }
+  if ("source" in normalized) {
+    if (!isPlainObject3(normalized.source)) {
+      throw new Error(`Each object entry in "${name}" must have a valid "source".`);
+    }
+    normalized.source = { ...normalized.source };
+    for (const key of ["type", "url", "slug"]) {
+      if (typeof normalized.source[key] === "string") {
+        normalized.source[key] = normalized.source[key].trim();
+      }
+    }
+  }
+  return normalized;
+}
+function dedupeAddons(addons, name) {
+  const deduped = [];
+  const seen = /* @__PURE__ */ new Set();
+  for (const addon of addons) {
+    const normalized = normalizeAddonEntry(addon, name);
+    const key = typeof normalized === "string" ? `string:${normalized.toLowerCase()}` : `name:${normalized.name.toLowerCase()}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      deduped.push(normalized);
+    }
+  }
+  return deduped;
+}
+function buildPrimaryAddon(zipUrl, addonName, addonType, addonState) {
+  const type = String(addonType || "module").trim().toLowerCase();
+  if (!["module", "theme"].includes(type)) {
+    throw new Error('Input "addon-type" must be either "module" or "theme".');
+  }
+  const resolvedAddonName = typeof addonName === "string" && addonName.trim() || inferAddonNameFromZipUrl(zipUrl);
+  if (!resolvedAddonName) {
+    throw new Error(
+      'Input "addon-name" is required when the addon name cannot be inferred from "zip-url".'
+    );
+  }
+  if (type === "theme") {
+    return {
+      collection: "themes",
+      entry: {
+        name: resolvedAddonName,
+        source: {
+          type: "url",
+          url: zipUrl
         }
-        return plugin.trim();
-      }).filter(Boolean)
-    )
-  ];
+      }
+    };
+  }
+  const normalizedState = String(addonState || "activate").trim().toLowerCase();
+  if (!["install", "activate"].includes(normalizedState)) {
+    throw new Error(
+      'Input "addon-state" must be either "install" or "activate".'
+    );
+  }
+  return {
+    collection: "modules",
+    entry: {
+      name: resolvedAddonName,
+      state: normalizedState,
+      source: {
+        type: "url",
+        url: zipUrl
+      }
+    }
+  };
 }
 function mergeBlueprint(baseValue, overrideValue) {
   if (overrideValue === void 0) {
@@ -23750,25 +23850,46 @@ function mergeBlueprint(baseValue, overrideValue) {
 }
 function buildBlueprint(zipUrl, title, author, description, options = {}) {
   const {
-    extraPlugins = [],
-    seed,
+    addonName,
+    addonType = "module",
+    addonState,
+    extraModules = [],
+    extraThemes = [],
+    users,
+    itemSets,
+    items,
+    site,
     landingPage,
     debugEnabled,
     siteTitle,
     siteLocale,
     siteTimezone,
-    loginUsername,
+    loginEmail,
     loginPassword,
     blueprintOverride
   } = options;
   const blueprint = {
+    $schema: OMEKA_BLUEPRINT_SCHEMA_URL,
     meta: {
       title,
       author,
       description
-    },
-    plugins: dedupePlugins([zipUrl, ...extraPlugins], "extra-plugins")
+    }
   };
+  const primaryAddon = buildPrimaryAddon(zipUrl, addonName, addonType, addonState);
+  blueprint[primaryAddon.collection] = [primaryAddon.entry];
+  if (extraModules.length > 0) {
+    blueprint.modules = dedupeAddons(
+      [...blueprint.modules || [], ...extraModules],
+      "extra-modules"
+    );
+  }
+  if (extraThemes.length > 0) {
+    blueprint.themes = dedupeAddons(
+      [...blueprint.themes || [], ...extraThemes],
+      "extra-themes"
+    );
+  }
   if (landingPage) {
     blueprint.landingPage = landingPage;
   }
@@ -23789,8 +23910,8 @@ function buildBlueprint(zipUrl, title, author, description, options = {}) {
     blueprint.siteOptions = siteOptions;
   }
   const login = {};
-  if (loginUsername) {
-    login.username = loginUsername;
+  if (loginEmail) {
+    login.email = loginEmail;
   }
   if (loginPassword) {
     login.password = loginPassword;
@@ -23798,14 +23919,29 @@ function buildBlueprint(zipUrl, title, author, description, options = {}) {
   if (Object.keys(login).length > 0) {
     blueprint.login = login;
   }
-  if (seed) {
-    blueprint.seed = seed;
+  if (users) {
+    blueprint.users = users;
+  }
+  if (itemSets) {
+    blueprint.itemSets = itemSets;
+  }
+  if (items) {
+    blueprint.items = items;
+  }
+  if (site) {
+    blueprint.site = site;
   }
   const mergedBlueprint = mergeBlueprint(blueprint, blueprintOverride);
-  if (Array.isArray(mergedBlueprint.plugins)) {
-    mergedBlueprint.plugins = dedupePlugins(
-      mergedBlueprint.plugins,
-      "blueprint-json.plugins"
+  if (Array.isArray(mergedBlueprint.modules)) {
+    mergedBlueprint.modules = dedupeAddons(
+      mergedBlueprint.modules,
+      "blueprint-json.modules"
+    );
+  }
+  if (Array.isArray(mergedBlueprint.themes)) {
+    mergedBlueprint.themes = dedupeAddons(
+      mergedBlueprint.themes,
+      "blueprint-json.themes"
     );
   }
   return mergedBlueprint;
@@ -23817,10 +23953,10 @@ function buildPreviewUrl(playgroundUrl, blueprintJson) {
 }
 function buildCommentBody(marker, previewUrl, imageUrl) {
   return `<!-- ${marker} -->
-## FacturaScripts Playground Preview
+## Omeka S Playground Preview
 
 <a href="${previewUrl}">
-  <img src="${imageUrl}" alt="Open this PR in FacturaScripts Playground" width="220">
+  <img src="${imageUrl}" alt="Open this PR in Omeka S Playground" width="220">
 </a><br>
 <small><a href="${previewUrl}">Try this PR in your browser</a></small>
 
@@ -23833,13 +23969,31 @@ async function run() {
     const token = getInput("github-token", { required: true });
     const zipUrl = getInput("zip-url", { required: true });
     const title = getInput("title") || "PR Preview";
-    const description = getInput("description") || "Preview this PR in FacturaScripts Playground";
-    const author = getInput("author") || "erseco";
-    const playgroundUrl = getInput("playground-url") || "https://erseco.github.io/facturascripts-playground/";
-    const imageUrl = getInput("image-url") || "https://raw.githubusercontent.com/erseco/facturascripts-playground/refs/heads/main/ogimage.png";
-    const commentMarker = getInput("comment-marker") || "facturascripts-playground-preview";
-    const extraPlugins = parseJsonInput("extra-plugins", getInput("extra-plugins"), "array") || [];
-    const seed = parseJsonInput("seed-json", getInput("seed-json"), "object");
+    const description = getInput("description") || "Preview this PR in Omeka S Playground";
+    const author = getInput("author") || "ateeducacion";
+    const playgroundUrl = getInput("playground-url") || "https://ateeducacion.github.io/omeka-s-playground/";
+    const imageUrl = getInput("image-url") || "https://raw.githubusercontent.com/ateeducacion/omeka-s-playground/refs/heads/main/ogimage.png";
+    const commentMarker = getInput("comment-marker") || "omeka-s-playground-preview";
+    const addonName = getInput("addon-name") || void 0;
+    const addonType = getInput("addon-type") || "module";
+    const addonState = getInput("addon-state") || void 0;
+    const extraModules = [
+      ...parseJsonInput(
+        "extra-modules",
+        getInput("extra-modules"),
+        "array"
+      ) || [],
+      ...parseJsonInput(
+        "extra-plugins",
+        getInput("extra-plugins"),
+        "array"
+      ) || []
+    ];
+    const extraThemes = parseJsonInput("extra-themes", getInput("extra-themes"), "array") || [];
+    const users = parseJsonInput("users-json", getInput("users-json"), "array");
+    const itemSets = parseJsonInput("item-sets-json", getInput("item-sets-json"), "array");
+    const items = parseJsonInput("items-json", getInput("items-json"), "array");
+    const site = parseJsonInput("site-json", getInput("site-json"), "object");
     const blueprintOverride = parseJsonInput("blueprint-json", getInput("blueprint-json"), "object");
     const landingPage = getInput("landing-page") || void 0;
     const debugEnabled = parseOptionalBoolean(
@@ -23849,7 +24003,7 @@ async function run() {
     const siteTitle = getInput("site-title") || void 0;
     const siteLocale = getInput("site-locale") || void 0;
     const siteTimezone = getInput("site-timezone") || void 0;
-    const loginUsername = getInput("login-username") || void 0;
+    const loginEmail = getInput("login-email") || getInput("login-username") || void 0;
     const loginPassword = getInput("login-password") || void 0;
     const context3 = context2;
     const prNumber = context3.payload.pull_request && context3.payload.pull_request.number;
@@ -23861,14 +24015,21 @@ async function run() {
     }
     const { owner, repo } = context3.repo;
     const blueprint = buildBlueprint(zipUrl, title, author, description, {
-      extraPlugins,
-      seed,
+      addonName,
+      addonType,
+      addonState,
+      extraModules,
+      extraThemes,
+      users,
+      itemSets,
+      items,
+      site,
       landingPage,
       debugEnabled,
       siteTitle,
       siteLocale,
       siteTimezone,
-      loginUsername,
+      loginEmail,
       loginPassword,
       blueprintOverride
     });
