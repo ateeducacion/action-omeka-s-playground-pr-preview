@@ -1,62 +1,81 @@
-# FacturaScripts Playground PR Preview Action
+# Omeka S Playground PR Preview Action
 
-A GitHub Action that automatically posts or updates a sticky pull request comment containing a preview link to [FacturaScripts Playground](https://erseco.github.io/facturascripts-playground/) for any plugin, extension, or project ZIP.
+A GitHub Action that automatically posts or updates a sticky pull request comment containing a preview link to [Omeka S Playground](https://ateeducacion.github.io/omeka-s-playground/) for a module or theme ZIP.
+
+It generates a base64url-encoded `blueprint-data` payload compatible with the Omeka S Playground blueprint schema, so the PR comment opens a ready-to-test browser preview of the addon under review.
 
 ## Usage
 
-### Simple usage
+### Preview a module ZIP from the PR branch
 
 ```yaml
-- name: Add FacturaScripts Playground preview
-  uses: erseco/action-facturascripts-playground-pr-preview@v1
+- name: Add Omeka S Playground preview
+  uses: ateeducacion/action-omeka-s-playground-pr-preview@v1
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     zip-url: https://github.com/${{ github.repository }}/archive/refs/heads/${{ github.head_ref }}.zip
-    title: My Plugin PR Preview
-    description: Preview this PR in FacturaScripts Playground
+    addon-name: MyModule
+    addon-type: module
+    title: My Module PR Preview
+    description: Preview this PR in Omeka S Playground
 ```
 
-### With extra plugins
+> `addon-name` is strongly recommended when `zip-url` points to a GitHub archive ZIP because Omeka S Playground requires an explicit addon name for remote modules and themes.
+
+### Preview a theme ZIP
 
 ```yaml
-- name: Add FacturaScripts Playground preview
-  uses: erseco/action-facturascripts-playground-pr-preview@v1
+- name: Add Omeka S Playground preview
+  uses: ateeducacion/action-omeka-s-playground-pr-preview@v1
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     zip-url: https://github.com/${{ github.repository }}/archive/refs/heads/${{ github.head_ref }}.zip
-    extra-plugins: '["CommandPalette","https://facturascripts.com/plugins/mi-plugin-remoto"]'
-    landing-page: /AdminPlugins
-    debug-enabled: true
+    addon-name: MyTheme
+    addon-type: theme
+    landing-page: /s/demo
+    site-json: >-
+      {"title":"Demo Site","slug":"demo","theme":"MyTheme","setAsDefault":true}
 ```
 
-### With seed data
+### Add extra modules, users, items, and site configuration
 
 ```yaml
-- name: Add FacturaScripts Playground preview
-  uses: erseco/action-facturascripts-playground-pr-preview@v1
+- name: Add Omeka S Playground preview
+  uses: ateeducacion/action-omeka-s-playground-pr-preview@v1
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
-    zip-url: https://github.com/${{ github.repository }}/archive/refs/heads/${{ github.head_ref }}.zip
-    seed-json: >-
-      {"customers":[{"codcliente":"CDEMO1","nombre":"Cliente Demo"}],
-       "products":[{"referencia":"SKU-DEMO-001","descripcion":"Producto demo","precio":19.95}]}
+    zip-url: https://github.com/${{ github.repository }}/releases/download/pr-preview/MyModule.zip
+    addon-name: MyModule
+    extra-modules: >-
+      ["CSVImport",{"name":"NumericDataTypes","state":"install","source":{"type":"omeka.org","slug":"numeric-data-types"}}]
+    users-json: >-
+      [{"username":"admin","email":"admin@example.com","password":"password","role":"global_admin"}]
+    item-sets-json: >-
+      [{"title":"Demo Collection"}]
+    items-json: >-
+      [{"title":"Landscape sample","itemSets":["Demo Collection"],"media":[{"type":"url","url":"https://example.com/photo.jpg","title":"Photo"}]}]
+    site-json: >-
+      {"title":"Demo Site","slug":"demo","theme":"default","setAsDefault":true}
+    login-email: admin@example.com
+    login-password: password
 ```
 
-### With advanced blueprint override
+### Advanced blueprint override
 
 ```yaml
-- name: Add FacturaScripts Playground preview
-  uses: erseco/action-facturascripts-playground-pr-preview@v1
+- name: Add Omeka S Playground preview
+  uses: ateeducacion/action-omeka-s-playground-pr-preview@v1
   with:
     github-token: ${{ secrets.GITHUB_TOKEN }}
     zip-url: https://github.com/${{ github.repository }}/archive/refs/heads/${{ github.head_ref }}.zip
-    site-title: FacturaScripts Demo
-    login-username: admin
-    login-password: admin
+    addon-name: MyModule
+    site-title: Omeka Playground Demo
+    site-locale: es
+    site-timezone: Atlantic/Canary
     blueprint-json: >-
-      {"debug":{"enabled":true},
-       "siteOptions":{"timezone":"Europe/Madrid"},
-       "plugins":["https://github.com/${{ github.repository }}/archive/refs/heads/${{ github.head_ref }}.zip","CommandPalette"]}
+      {"themes":[{"name":"Foundation","source":{"type":"omeka.org","slug":"foundation-s"}}],
+       "site":{"title":"Demo Site","slug":"demo","theme":"Foundation","setAsDefault":true},
+       "debug":{"enabled":true}}
 ```
 
 ## Inputs
@@ -64,29 +83,41 @@ A GitHub Action that automatically posts or updates a sticky pull request commen
 | Input | Required | Default | Description |
 |---|---|---|---|
 | `github-token` | ✅ | — | GitHub token with `pull-requests: write` permission |
-| `zip-url` | ✅ | — | URL of the plugin/extension ZIP file to load in the playground |
+| `zip-url` | ✅ | — | URL of the primary module or theme ZIP file |
+| `addon-name` | ❌ | inferred from `zip-url` when possible | Explicit Omeka addon name for the primary ZIP |
+| `addon-type` | ❌ | `module` | Primary addon type: `module` or `theme` |
+| `addon-state` | ❌ | `activate` | State for the primary module (`install` or `activate`). Ignored for themes |
 | `title` | ❌ | `PR Preview` | Blueprint meta title |
-| `description` | ❌ | `Preview this PR in FacturaScripts Playground` | Blueprint meta description |
-| `author` | ❌ | `erseco` | Blueprint meta author |
-| `playground-url` | ❌ | `https://erseco.github.io/facturascripts-playground/` | Base URL of the FacturaScripts Playground |
-| `image-url` | ❌ | *(playground logo)* | URL of the image to display in the PR comment |
-| `comment-marker` | ❌ | `facturascripts-playground-preview` | Hidden HTML marker used to identify and deduplicate the sticky PR comment |
-| `extra-plugins` | ❌ | — | JSON array of additional plugins appended after `zip-url` before the final override |
-| `seed-json` | ❌ | — | JSON object with optional blueprint `seed` data |
+| `description` | ❌ | `Preview this PR in Omeka S Playground` | Blueprint meta description |
+| `author` | ❌ | `ateeducacion` | Blueprint meta author |
+| `playground-url` | ❌ | `https://ateeducacion.github.io/omeka-s-playground/` | Base URL of the Omeka S Playground |
+| `image-url` | ❌ | Omeka S Playground `ogimage.png` | URL of the image shown in the PR comment |
+| `comment-marker` | ❌ | `omeka-s-playground-preview` | Hidden marker used to update the same sticky comment |
+| `extra-modules` | ❌ | — | JSON array of additional blueprint `modules` entries |
+| `extra-themes` | ❌ | — | JSON array of additional blueprint `themes` entries |
+| `users-json` | ❌ | — | JSON array assigned to blueprint `users` |
+| `item-sets-json` | ❌ | — | JSON array assigned to blueprint `itemSets` |
+| `items-json` | ❌ | — | JSON array assigned to blueprint `items` |
+| `site-json` | ❌ | — | JSON object assigned to blueprint `site` |
 | `landing-page` | ❌ | — | Blueprint `landingPage` value |
 | `debug-enabled` | ❌ | — | Boolean-like value (`true`/`false`, `on`/`off`, `1`/`0`) for `debug.enabled` |
 | `site-title` | ❌ | — | Blueprint `siteOptions.title` value |
 | `site-locale` | ❌ | — | Blueprint `siteOptions.locale` value |
 | `site-timezone` | ❌ | — | Blueprint `siteOptions.timezone` value |
-| `login-username` | ❌ | — | Blueprint `login.username` value |
+| `login-email` | ❌ | — | Blueprint `login.email` value |
 | `login-password` | ❌ | — | Blueprint `login.password` value |
-| `blueprint-json` | ❌ | — | JSON object merged last into the generated blueprint, allowing advanced additions or overrides |
+| `blueprint-json` | ❌ | — | JSON object merged last into the generated blueprint |
+
+Legacy compatibility aliases still accepted:
+
+- `extra-plugins` → `extra-modules`
+- `login-username` → `login-email`
 
 ## Outputs
 
 | Output | Description |
 |---|---|
-| `preview-url` | The full playground preview URL |
+| `preview-url` | The full Omeka S Playground preview URL |
 
 ## Required Workflow Permissions
 
@@ -115,81 +146,107 @@ jobs:
   preview:
     runs-on: ubuntu-latest
     steps:
-      - name: Add FacturaScripts Playground preview
-        uses: erseco/action-facturascripts-playground-pr-preview@v1
+      - name: Add Omeka S Playground preview
+        uses: ateeducacion/action-omeka-s-playground-pr-preview@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           zip-url: https://github.com/${{ github.repository }}/archive/refs/heads/${{ github.head_ref }}.zip
-          title: My Plugin PR Preview
-          description: Preview this PR in FacturaScripts Playground
-          extra-plugins: '["CommandPalette"]'
-          site-locale: es_ES
-          site-timezone: Europe/Madrid
+          addon-name: MyModule
+          extra-modules: '["CSVImport"]'
+          site-locale: es
+          site-timezone: Atlantic/Canary
 ```
 
 ## How It Works
 
-1. **Blueprint generation** — The action builds a JSON blueprint from inputs:
+1. **Blueprint generation** — The action builds an Omeka S Playground blueprint from the provided inputs. The primary `zip-url` becomes either a `modules` or `themes` entry, depending on `addon-type`.
+
+   Minimal example:
+
    ```json
    {
+     "$schema": "https://ateeducacion.github.io/omeka-s-playground/assets/blueprints/blueprint-schema.json",
      "meta": {
-       "title": "My Plugin PR Preview",
-       "author": "erseco",
-       "description": "Preview this PR in FacturaScripts Playground"
+       "title": "My Module PR Preview",
+       "author": "ateeducacion",
+       "description": "Preview this PR in Omeka S Playground"
      },
-     "plugins": [
-       "https://github.com/OWNER/REPO/archive/refs/heads/BRANCH.zip"
+     "modules": [
+       {
+         "name": "MyModule",
+         "state": "activate",
+         "source": {
+           "type": "url",
+           "url": "https://github.com/OWNER/REPO/archive/refs/heads/BRANCH.zip"
+         }
+       }
      ]
    }
    ```
 
-   Optional inputs extend that blueprint only when they are provided. For example:
+   Optional inputs extend the blueprint only when present, for example:
 
    ```json
    {
+     "$schema": "https://ateeducacion.github.io/omeka-s-playground/assets/blueprints/blueprint-schema.json",
      "meta": {
-       "title": "My Plugin PR Preview",
-       "author": "erseco",
-       "description": "Preview this PR in FacturaScripts Playground"
+       "title": "My Module PR Preview",
+       "author": "ateeducacion",
+       "description": "Preview this PR in Omeka S Playground"
      },
-     "plugins": [
-       "https://github.com/OWNER/REPO/archive/refs/heads/BRANCH.zip",
-       "CommandPalette"
+     "modules": [
+       {
+         "name": "MyModule",
+         "state": "activate",
+         "source": {
+           "type": "url",
+           "url": "https://github.com/OWNER/REPO/archive/refs/heads/BRANCH.zip"
+         }
+       },
+       "CSVImport"
      ],
-     "landingPage": "/AdminPlugins",
+     "themes": [
+       {
+         "name": "Foundation",
+         "source": {
+           "type": "omeka.org",
+           "slug": "foundation-s"
+         }
+       }
+     ],
+     "landingPage": "/s/demo",
      "debug": {
        "enabled": true
      },
      "siteOptions": {
-       "title": "FacturaScripts Demo",
-       "locale": "es_ES",
-       "timezone": "Europe/Madrid"
+       "title": "Omeka Playground Demo",
+       "locale": "es",
+       "timezone": "Atlantic/Canary"
      },
      "login": {
-       "username": "admin",
-       "password": "admin"
+       "email": "admin@example.com",
+       "password": "password"
      },
-     "seed": {
-       "customers": [
-         {
-           "codcliente": "CDEMO1",
-           "nombre": "Cliente Demo"
-         }
-       ]
+     "site": {
+       "title": "Demo Site",
+       "slug": "demo",
+       "theme": "Foundation",
+       "setAsDefault": true
      }
    }
    ```
 
-   The action deduplicates `plugins` where possible, safely parses JSON inputs, and applies `blueprint-json` last as the final override layer.
+   The action deduplicates `modules` and `themes` by addon name where possible, safely parses JSON inputs, and applies `blueprint-json` last as the final override layer.
 
-2. **Base64url encoding** — The blueprint JSON is encoded as [base64url](https://datatracker.ietf.org/doc/html/rfc4648#section-5) (RFC 4648 §5), which replaces `+` with `-`, `/` with `_`, and strips trailing `=`.
+2. **Base64url encoding** — The blueprint JSON is encoded as [base64url](https://datatracker.ietf.org/doc/html/rfc4648#section-5) (RFC 4648 §5), replacing `+` with `-`, `/` with `_`, and removing trailing `=`.
 
 3. **Preview URL** — The encoded blueprint is appended as the `blueprint-data` query parameter:
-   ```
-   https://erseco.github.io/facturascripts-playground/?blueprint-data=ENCODED_BLUEPRINT
+
+   ```text
+   https://ateeducacion.github.io/omeka-s-playground/?blueprint-data=ENCODED_BLUEPRINT
    ```
 
-4. **Sticky comment** — The action searches existing PR comments for a hidden HTML marker (`<!-- facturascripts-playground-preview -->`). If found, it updates that comment; otherwise it creates a new one. This prevents duplicate comments on repeated workflow runs (`synchronize`, `edited`, etc.).
+4. **Sticky comment** — The action searches existing PR comments for a hidden HTML marker (`<!-- omeka-s-playground-preview -->`). If found, it updates that comment; otherwise it creates a new one.
 
 ## Development
 

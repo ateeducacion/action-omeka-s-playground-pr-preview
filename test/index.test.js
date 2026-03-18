@@ -27,83 +27,173 @@ test('toBase64Url strips padding from base64', () => {
 
 test('buildBlueprint returns correct structure', () => {
   const bp = buildBlueprint(
-    'https://example.com/plugin.zip',
+    'https://example.com/Mapping.zip',
     'Test Title',
     'test-author',
     'Test description'
   );
   assert.deepEqual(bp, {
+    $schema:
+      'https://ateeducacion.github.io/omeka-s-playground/assets/blueprints/blueprint-schema.json',
     meta: {
       title: 'Test Title',
       author: 'test-author',
       description: 'Test description',
     },
-    plugins: ['https://example.com/plugin.zip'],
+    modules: [
+      {
+        name: 'Mapping',
+        state: 'activate',
+        source: {
+          type: 'url',
+          url: 'https://example.com/Mapping.zip',
+        },
+      },
+    ],
   });
 });
 
-test('buildBlueprint adds optional sections, deduplicates plugins, and keeps unset sections out', () => {
+test('buildBlueprint adds optional sections, deduplicates addons, and keeps unset sections out', () => {
   const bp = buildBlueprint(
-    'https://example.com/plugin.zip',
+    'https://github.com/ateeducacion/omeka-s-module-my-module/archive/refs/heads/main.zip',
     'Test Title',
     'test-author',
     'Test description',
     {
-      extraPlugins: [
-        'PluginA',
-        ' https://example.com/plugin.zip ',
-        'PluginB',
-        'PluginA',
+      addonName: 'MyModule',
+      extraModules: [
+        'CSVImport',
+        {
+          name: 'MyModule',
+          state: 'install',
+          source: { type: 'url', url: 'https://example.com/MyModule.zip' },
+        },
+        {
+          name: 'NumericDataTypes',
+          state: 'install',
+          source: { type: 'omeka.org', slug: 'numeric-data-types' },
+        },
       ],
-      seed: {
-        customers: [{ codcliente: 'CDEMO1', nombre: 'Cliente Demo' }],
+      extraThemes: [
+        'default',
+        {
+          name: 'Foundation',
+          source: { type: 'omeka.org', slug: 'foundation-s' },
+        },
+        'default',
+      ],
+      users: [
+        {
+          username: 'admin',
+          email: 'admin@example.com',
+          password: 'password',
+          role: 'global_admin',
+        },
+      ],
+      itemSets: [{ title: 'Demo Collection' }],
+      items: [
+        {
+          title: 'Landscape sample',
+          itemSets: ['Demo Collection'],
+        },
+      ],
+      site: {
+        title: 'Demo Site',
+        slug: 'demo',
+        theme: 'Foundation',
+        setAsDefault: true,
       },
-      landingPage: '/admin',
+      landingPage: '/s/demo',
       debugEnabled: true,
       siteTitle: 'Demo Site',
-      siteLocale: 'es_ES',
-      loginUsername: 'admin',
+      siteLocale: 'es',
+      loginEmail: 'admin@example.com',
     }
   );
 
   assert.deepEqual(bp, {
+    $schema:
+      'https://ateeducacion.github.io/omeka-s-playground/assets/blueprints/blueprint-schema.json',
     meta: {
       title: 'Test Title',
       author: 'test-author',
       description: 'Test description',
     },
-    plugins: [
-      'https://example.com/plugin.zip',
-      'PluginA',
-      'PluginB',
+    modules: [
+      {
+        name: 'MyModule',
+        state: 'activate',
+        source: {
+          type: 'url',
+          url: 'https://github.com/ateeducacion/omeka-s-module-my-module/archive/refs/heads/main.zip',
+        },
+      },
+      'CSVImport',
+      {
+        name: 'NumericDataTypes',
+        state: 'install',
+        source: {
+          type: 'omeka.org',
+          slug: 'numeric-data-types',
+        },
+      },
     ],
-    landingPage: '/admin',
+    themes: [
+      'default',
+      {
+        name: 'Foundation',
+        source: {
+          type: 'omeka.org',
+          slug: 'foundation-s',
+        },
+      },
+    ],
+    users: [
+      {
+        username: 'admin',
+        email: 'admin@example.com',
+        password: 'password',
+        role: 'global_admin',
+      },
+    ],
+    itemSets: [{ title: 'Demo Collection' }],
+    items: [
+      {
+        title: 'Landscape sample',
+        itemSets: ['Demo Collection'],
+      },
+    ],
+    site: {
+      title: 'Demo Site',
+      slug: 'demo',
+      theme: 'Foundation',
+      setAsDefault: true,
+    },
+    landingPage: '/s/demo',
     debug: {
       enabled: true,
     },
     siteOptions: {
       title: 'Demo Site',
-      locale: 'es_ES',
+      locale: 'es',
     },
     login: {
-      username: 'admin',
-    },
-    seed: {
-      customers: [{ codcliente: 'CDEMO1', nombre: 'Cliente Demo' }],
+      email: 'admin@example.com',
     },
   });
 
   assert.equal('timezone' in bp.siteOptions, false);
 });
 
-test('buildBlueprint applies blueprint override last and still deduplicates plugins', () => {
+test('buildBlueprint applies blueprint override last and still deduplicates addons', () => {
   const bp = buildBlueprint(
-    'https://example.com/plugin.zip',
+    'https://example.com/Mapping.zip',
     'Generated Title',
     'generated-author',
     'Generated description',
     {
-      extraPlugins: ['PluginA'],
+      addonName: 'Mapping',
+      extraModules: ['CSVImport'],
       debugEnabled: true,
       blueprintOverride: {
         meta: {
@@ -115,12 +205,25 @@ test('buildBlueprint applies blueprint override last and still deduplicates plug
         siteOptions: {
           timezone: 'Europe/Madrid',
         },
-        plugins: ['PluginA', 'PluginA', 'PluginB'],
+        modules: [
+          {
+            name: 'CSVImport',
+            state: 'activate',
+          },
+          {
+            name: 'CSVImport',
+            state: 'activate',
+          },
+          'Mapping',
+        ],
+        themes: ['default', 'default'],
       },
     }
   );
 
   assert.deepEqual(bp, {
+    $schema:
+      'https://ateeducacion.github.io/omeka-s-playground/assets/blueprints/blueprint-schema.json',
     meta: {
       title: 'Override Title',
       author: 'generated-author',
@@ -132,39 +235,48 @@ test('buildBlueprint applies blueprint override last and still deduplicates plug
     siteOptions: {
       timezone: 'Europe/Madrid',
     },
-    plugins: ['PluginA', 'PluginB'],
+    modules: [
+      {
+        name: 'CSVImport',
+        state: 'activate',
+      },
+      'Mapping',
+    ],
+    themes: ['default'],
   });
 });
 
-test('buildBlueprint rejects non-string plugin entries', () => {
+test('buildBlueprint rejects invalid addon entries', () => {
   assert.throws(
     () =>
       buildBlueprint(
-        'https://example.com/plugin.zip',
+        'https://example.com/Mapping.zip',
         'Generated Title',
         'generated-author',
         'Generated description',
         {
-          extraPlugins: ['PluginA', 123],
+          addonName: 'Mapping',
+          extraModules: ['CSVImport', 123],
         }
       ),
-    /Each entry in "extra-plugins" must be a string/
+    /Each entry in "extra-modules" must be either a string or an object/
   );
 
   assert.throws(
     () =>
       buildBlueprint(
-        'https://example.com/plugin.zip',
+        'https://example.com/Mapping.zip',
         'Generated Title',
         'generated-author',
         'Generated description',
         {
+          addonName: 'Mapping',
           blueprintOverride: {
-            plugins: ['PluginA', false],
+            modules: [{ state: 'activate' }],
           },
         }
       ),
-    /Each entry in "blueprint-json.plugins" must be a string/
+    /must include a non-empty "name"/
   );
 });
 
@@ -199,9 +311,9 @@ test('parseOptionalBoolean accepts common boolean forms and rejects invalid valu
 });
 
 test('buildPreviewUrl appends blueprint-data query param', () => {
-  const json = '{"meta":{},"plugins":["https://example.com/plugin.zip"]}';
-  const url = buildPreviewUrl('https://erseco.github.io/facturascripts-playground/', json);
-  assert.ok(url.startsWith('https://erseco.github.io/facturascripts-playground/'), 'starts with playground URL');
+  const json = '{"meta":{},"modules":["CSVImport"]}';
+  const url = buildPreviewUrl('https://ateeducacion.github.io/omeka-s-playground/', json);
+  assert.ok(url.startsWith('https://ateeducacion.github.io/omeka-s-playground/'), 'starts with playground URL');
   assert.ok(url.includes('?blueprint-data='), 'contains blueprint-data param');
   // Must not contain raw base64 special chars
   const encoded = url.split('?blueprint-data=')[1];
@@ -212,16 +324,17 @@ test('buildPreviewUrl appends blueprint-data query param', () => {
 
 test('buildPreviewUrl appends trailing slash to playground URL if missing', () => {
   const json = '{"test":1}';
-  const url = buildPreviewUrl('https://erseco.github.io/facturascripts-playground', json);
-  assert.ok(url.startsWith('https://erseco.github.io/facturascripts-playground/'), 'trailing slash added');
+  const url = buildPreviewUrl('https://ateeducacion.github.io/omeka-s-playground', json);
+  assert.ok(url.startsWith('https://ateeducacion.github.io/omeka-s-playground/'), 'trailing slash added');
 });
 
 test('buildCommentBody contains marker, URL, and image', () => {
-  const marker = 'facturascripts-playground-preview';
-  const previewUrl = 'https://erseco.github.io/facturascripts-playground/?blueprint-data=abc123';
+  const marker = 'omeka-s-playground-preview';
+  const previewUrl = 'https://ateeducacion.github.io/omeka-s-playground/?blueprint-data=abc123';
   const imageUrl = 'https://example.com/logo.png';
   const body = buildCommentBody(marker, previewUrl, imageUrl);
   assert.ok(body.includes(`<!-- ${marker} -->`), 'contains hidden marker');
   assert.ok(body.includes(previewUrl), 'contains preview URL');
   assert.ok(body.includes(imageUrl), 'contains image URL');
+  assert.ok(body.includes('Omeka S Playground Preview'), 'contains Omeka S title');
 });

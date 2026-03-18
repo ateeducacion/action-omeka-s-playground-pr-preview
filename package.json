@@ -1,7 +1,7 @@
 {
-  "name": "facturascripts-playground-pr-preview",
+  "name": "omeka-s-playground-pr-preview",
   "version": "1.0.0",
-  "description": "GitHub Action that posts a FacturaScripts Playground PR preview comment",
+  "description": "GitHub Action that posts an Omeka S Playground PR preview comment",
   "main": "index.js",
   "type": "module",
   "scripts": {

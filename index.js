@@ -15,21 +15,42 @@ async function run() {
     const zipUrl = core.getInput('zip-url', { required: true });
     const title = core.getInput('title') || 'PR Preview';
     const description =
-      core.getInput('description') || 'Preview this PR in FacturaScripts Playground';
-    const author = core.getInput('author') || 'erseco';
+      core.getInput('description') || 'Preview this PR in Omeka S Playground';
+    const author = core.getInput('author') || 'ateeducacion';
     const playgroundUrl =
       core.getInput('playground-url') ||
-      'https://erseco.github.io/facturascripts-playground/';
+      'https://ateeducacion.github.io/omeka-s-playground/';
     const imageUrl =
       core.getInput('image-url') ||
-      'https://raw.githubusercontent.com/erseco/facturascripts-playground/refs/heads/main/ogimage.png';
+      'https://raw.githubusercontent.com/ateeducacion/omeka-s-playground/refs/heads/main/ogimage.png';
     const commentMarker =
-      core.getInput('comment-marker') || 'facturascripts-playground-preview';
-    const extraPlugins =
-      parseJsonInput('extra-plugins', core.getInput('extra-plugins'), 'array') ||
+      core.getInput('comment-marker') || 'omeka-s-playground-preview';
+    const addonName = core.getInput('addon-name') || undefined;
+    const addonType = core.getInput('addon-type') || 'module';
+    const addonState = core.getInput('addon-state') || undefined;
+    const extraModules = [
+      ...(parseJsonInput(
+        'extra-modules',
+        core.getInput('extra-modules'),
+        'array'
+      ) || []),
+      ...(parseJsonInput(
+        'extra-plugins',
+        core.getInput('extra-plugins'),
+        'array'
+      ) || []),
+    ];
+    const extraThemes =
+      parseJsonInput('extra-themes', core.getInput('extra-themes'), 'array') ||
       [];
-    const seed =
-      parseJsonInput('seed-json', core.getInput('seed-json'), 'object');
+    const users =
+      parseJsonInput('users-json', core.getInput('users-json'), 'array');
+    const itemSets =
+      parseJsonInput('item-sets-json', core.getInput('item-sets-json'), 'array');
+    const items =
+      parseJsonInput('items-json', core.getInput('items-json'), 'array');
+    const site =
+      parseJsonInput('site-json', core.getInput('site-json'), 'object');
     const blueprintOverride =
       parseJsonInput('blueprint-json', core.getInput('blueprint-json'), 'object');
     const landingPage = core.getInput('landing-page') || undefined;
@@ -40,7 +61,8 @@ async function run() {
     const siteTitle = core.getInput('site-title') || undefined;
     const siteLocale = core.getInput('site-locale') || undefined;
     const siteTimezone = core.getInput('site-timezone') || undefined;
-    const loginUsername = core.getInput('login-username') || undefined;
+    const loginEmail =
+      core.getInput('login-email') || core.getInput('login-username') || undefined;
     const loginPassword = core.getInput('login-password') || undefined;
 
     // --- Validate PR context ---
@@ -58,14 +80,21 @@ async function run() {
 
     // --- Build blueprint and preview URL ---
     const blueprint = buildBlueprint(zipUrl, title, author, description, {
-      extraPlugins,
-      seed,
+      addonName,
+      addonType,
+      addonState,
+      extraModules,
+      extraThemes,
+      users,
+      itemSets,
+      items,
+      site,
       landingPage,
       debugEnabled,
       siteTitle,
       siteLocale,
       siteTimezone,
-      loginUsername,
+      loginEmail,
       loginPassword,
       blueprintOverride,
     });
