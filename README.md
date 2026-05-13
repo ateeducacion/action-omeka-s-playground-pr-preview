@@ -84,6 +84,7 @@ It generates a base64url-encoded `blueprint-data` payload compatible with the Om
 |---|---|---|---|
 | `github-token` | ✅ | — | GitHub token with `pull-requests: write` permission |
 | `zip-url` | ✅ | — | URL of the primary module or theme ZIP file |
+| `mode` | ❌ | `comment` | How to publish the preview: `comment` (sticky PR comment) or `append-to-description` (managed block inside the PR body) |
 | `addon-name` | ❌ | inferred from `zip-url` when possible | Explicit Omeka addon name for the primary ZIP |
 | `addon-type` | ❌ | `module` | Primary addon type: `module` or `theme` |
 | `addon-state` | ❌ | `activate` | State for the primary module (`install` or `activate`). Ignored for themes |
@@ -92,7 +93,10 @@ It generates a base64url-encoded `blueprint-data` payload compatible with the Om
 | `author` | ❌ | `ateeducacion` | Blueprint meta author |
 | `playground-url` | ❌ | `https://ateeducacion.github.io/omeka-s-playground/` | Base URL of the Omeka S Playground |
 | `image-url` | ❌ | Omeka S Playground `ogimage.png` | URL of the image shown in the PR comment |
-| `comment-marker` | ❌ | `omeka-s-playground-preview` | Hidden marker used to update the same sticky comment |
+| `comment-marker` | ❌ | `omeka-s-playground-preview` | Hidden marker used to update the same sticky comment, and as the base for the `:start`/`:end` markers in description mode |
+| `extra-text` | ❌ | — | Optional text/HTML appended after the preview (useful for testing instructions) |
+| `restore-button-if-removed` | ❌ | `true` | In `append-to-description` mode, restore the preview block if the PR author removed it |
+| `pr-number` | ❌ | *(from event)* | Pull request number override. Required when triggered from a `workflow_run`; otherwise read from the `pull_request` event payload |
 | `extra-modules` | ❌ | — | JSON array of additional blueprint `modules` entries |
 | `extra-themes` | ❌ | — | JSON array of additional blueprint `themes` entries |
 | `users-json` | ❌ | — | JSON array assigned to blueprint `users` |
@@ -118,6 +122,9 @@ Legacy compatibility aliases still accepted:
 | Output | Description |
 |---|---|
 | `preview-url` | The full Omeka S Playground preview URL |
+| `mode` | Effective publishing mode used (`comment` or `append-to-description`) |
+| `comment-id` | ID of the managed preview comment in `comment` mode (empty otherwise) |
+| `rendered-description` | Managed description block rendered in `append-to-description` mode (empty otherwise) |
 
 ## Required Workflow Permissions
 
