@@ -28,7 +28,7 @@ async function run() {
       'https://ateeducacion.github.io/omeka-s-playground/';
     const imageUrl =
       core.getInput('image-url') ||
-      'https://raw.githubusercontent.com/ateeducacion/omeka-s-playground/refs/heads/main/ogimage.png';
+      'https://raw.githubusercontent.com/ateeducacion/omeka-s-playground/main/assets/playground-preview-button.svg';
     const commentMarker =
       core.getInput('comment-marker') || 'omeka-s-playground-preview';
     const extraText = (core.getInput('extra-text') || '').trim();
