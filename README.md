@@ -92,7 +92,7 @@ It generates a base64url-encoded `blueprint-data` payload compatible with the Om
 | `description` | ❌ | `Preview this PR in Omeka S Playground` | Blueprint meta description |
 | `author` | ❌ | `ateeducacion` | Blueprint meta author |
 | `playground-url` | ❌ | `https://ateeducacion.github.io/omeka-s-playground/` | Base URL of the Omeka S Playground |
-| `image-url` | ❌ | Omeka S Playground `ogimage.png` | URL of the image shown in the PR comment |
+| `image-url` | ❌ | Omeka S Playground `playground-preview-button.svg` | URL of the image shown in the PR comment (override to use a custom image, e.g. the old `ogimage.png`) |
 | `comment-marker` | ❌ | `omeka-s-playground-preview` | Hidden marker used to update the same sticky comment, and as the base for the `:start`/`:end` markers in description mode |
 | `extra-text` | ❌ | — | Optional text/HTML appended after the preview (useful for testing instructions) |
 | `restore-button-if-removed` | ❌ | `true` | In `append-to-description` mode, restore the preview block if the PR author removed it |

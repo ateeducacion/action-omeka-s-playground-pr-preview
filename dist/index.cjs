@@ -24044,7 +24044,7 @@ async function run() {
     const description = getInput("description") || "Preview this PR in Omeka S Playground";
     const author = getInput("author") || "ateeducacion";
     const playgroundUrl = getInput("playground-url") || "https://ateeducacion.github.io/omeka-s-playground/";
-    const imageUrl = getInput("image-url") || "https://raw.githubusercontent.com/ateeducacion/omeka-s-playground/refs/heads/main/ogimage.png";
+    const imageUrl = getInput("image-url") || "https://raw.githubusercontent.com/ateeducacion/omeka-s-playground/main/assets/playground-preview-button.svg";
     const commentMarker = getInput("comment-marker") || "omeka-s-playground-preview";
     const extraText = (getInput("extra-text") || "").trim();
     const prNumberInput = getInput("pr-number");
