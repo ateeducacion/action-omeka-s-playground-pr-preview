@@ -15,5 +15,5 @@
   "devDependencies": {
     "esbuild": "^0.28.0"
   },
-  "license": "MIT"
+  "license": "GPL-3.0-or-later"
 }
