@@ -1,6 +1,17 @@
 # Omeka S Playground PR Preview Action
 
+[![CI](https://github.com/ateeducacion/action-omeka-s-playground-pr-preview/actions/workflows/ci.yml/badge.svg)](https://github.com/ateeducacion/action-omeka-s-playground-pr-preview/actions/workflows/ci.yml)
+[![GitHub Marketplace](https://img.shields.io/badge/Marketplace-Omeka%20S%20Playground%20PR%20Preview-2088FF?logo=githubactions&logoColor=white)](https://github.com/marketplace/actions/omeka-s-playground-pr-preview)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![Try in Playground](https://img.shields.io/badge/-Try%20in%20Playground-822433?logoColor=white)](https://ateeducacion.github.io/omeka-s-playground/)
+
 A GitHub Action that automatically posts or updates a sticky pull request comment containing a preview link to [Omeka S Playground](https://ateeducacion.github.io/omeka-s-playground/) for a module or theme ZIP.
+
+<p align="center">
+  <a href="https://ateeducacion.github.io/omeka-s-playground/">
+    <img src="assets/playground-preview-button.svg" alt="Try in Omeka S Playground" width="320">
+  </a>
+</p>
 
 It generates a base64url-encoded `blueprint-data` payload compatible with the Omeka S Playground blueprint schema, so the PR comment opens a ready-to-test browser preview of the addon under review.
 
@@ -283,3 +294,7 @@ This bundles `index.js` and its dependencies into `dist/index.cjs` using [esbuil
 ```bash
 npm test
 ```
+
+## License
+
+Distributed under the GNU General Public License v3.0. See [`LICENSE`](LICENSE) for details.

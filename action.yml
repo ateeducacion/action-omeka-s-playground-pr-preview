@@ -2,6 +2,10 @@ name: 'Omeka S Playground PR Preview'
 description: 'Posts or updates a sticky PR comment with an Omeka S Playground preview link'
 author: 'ateeducacion'
 
+branding:
+  icon: 'play'
+  color: 'red'
+
 inputs:
   github-token:
     description: 'GitHub token with pull-requests:write permission'
