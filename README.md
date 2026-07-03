@@ -266,6 +266,25 @@ jobs:
 
 4. **Sticky comment** — The action searches existing PR comments for a hidden HTML marker (`<!-- omeka-s-playground-preview -->`). If found, it updates that comment; otherwise it creates a new one.
 
+## Large blueprints / HTTP 414
+
+The whole blueprint is always inlined as base64url in `?blueprint-data=` — there
+is no remote-URL escape hatch. For large blueprints the resulting URL can
+exceed common web-server request-line limits (nginx defaults to 8 KB), so the
+preview link returns **HTTP 414 (URI Too Long)** and the Playground never
+loads. The action logs a warning (advisory only — it does not fail the run)
+when it builds a `?blueprint-data=` link past ~8000 chars.
+
+To keep the link short, trim the inputs that feed the blueprint:
+
+- `extra-modules` / `extra-themes`
+- `users-json` / `item-sets-json` / `items-json` / `site-json`
+- `blueprint-json` — merged last as the final override layer, and often the
+  biggest single contributor since it is an arbitrary, unbounded JSON object
+
+Alternatively, split the preview into a smaller blueprint (e.g. drop optional
+seed data) so it fits under the limit.
+
 ## Development
 
 ### Prerequisites
