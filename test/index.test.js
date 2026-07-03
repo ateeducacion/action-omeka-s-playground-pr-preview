@@ -347,6 +347,14 @@ test('previewUrlExceedsLimit flags URLs longer than the safe limit', () => {
   assert.equal(previewUrlExceedsLimit('abc', 5), false);
 });
 
+test('previewUrlExceedsLimit is exact at the MAX_SAFE_PREVIEW_URL boundary', () => {
+  const atLimit = 'a'.repeat(MAX_SAFE_PREVIEW_URL);
+  assert.equal(previewUrlExceedsLimit(atLimit), false);
+
+  const overLimit = 'a'.repeat(MAX_SAFE_PREVIEW_URL + 1);
+  assert.equal(previewUrlExceedsLimit(overLimit), true);
+});
+
 test('buildCommentBody contains marker, URL, and image', () => {
   const marker = 'omeka-s-playground-preview';
   const previewUrl = 'https://ateeducacion.github.io/omeka-s-playground/?blueprint-data=abc123';

@@ -145,8 +145,9 @@ async function run() {
       core.warning(
         `Preview URL is ${previewUrl.length} chars (> ${MAX_SAFE_PREVIEW_URL}); ` +
           'a web server may reject it with HTTP 414 (URI Too Long). Trim ' +
-          '`extra-modules`/`extra-themes`/`items-json`/`site-json`, or split ' +
-          'the payload into a smaller blueprint.'
+          '`extra-modules`/`extra-themes`/`users-json`/`item-sets-json`/`items-json`/' +
+          '`site-json`, or `blueprint-json` (merged last and can be arbitrarily ' +
+          'large), or split the payload into a smaller blueprint.'
       );
     }
 

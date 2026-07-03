@@ -400,8 +400,9 @@ export const MAX_SAFE_PREVIEW_URL = 8000;
  * @param {number} [max=MAX_SAFE_PREVIEW_URL]
  * @returns {boolean}
  */
-export const previewUrlExceedsLimit = (url, max = MAX_SAFE_PREVIEW_URL) =>
-  typeof url === 'string' && url.length > max;
+export function previewUrlExceedsLimit(url, max = MAX_SAFE_PREVIEW_URL) {
+  return typeof url === 'string' && url.length > max;
+}
 
 function buildPreviewBody(previewUrl, imageUrl, extraText) {
   let body = `## Omeka S Playground Preview
