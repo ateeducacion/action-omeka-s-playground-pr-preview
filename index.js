@@ -3,6 +3,8 @@ import * as github from '@actions/github';
 import {
   buildBlueprint,
   buildPreviewUrl,
+  MAX_SAFE_PREVIEW_URL,
+  previewUrlExceedsLimit,
   buildCommentBody,
   buildDescriptionBlock,
   computeNextDescriptionBody,
@@ -138,6 +140,16 @@ async function run() {
     });
     const blueprintJson = JSON.stringify(blueprint, null, 2);
     const previewUrl = buildPreviewUrl(playgroundUrl, blueprintJson);
+
+    if (previewUrlExceedsLimit(previewUrl)) {
+      core.warning(
+        `Preview URL is ${previewUrl.length} chars (> ${MAX_SAFE_PREVIEW_URL}); ` +
+          'a web server may reject it with HTTP 414 (URI Too Long). Trim ' +
+          '`extra-modules`/`extra-themes`/`users-json`/`item-sets-json`/`items-json`/' +
+          '`site-json`, or `blueprint-json` (merged last and can be arbitrarily ' +
+          'large), or split the payload into a smaller blueprint.'
+      );
+    }
 
     core.info(`Preview URL: ${previewUrl}`);
     core.setOutput('preview-url', previewUrl);
