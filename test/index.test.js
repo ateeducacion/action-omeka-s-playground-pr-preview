@@ -4,6 +4,8 @@ import {
   toBase64Url,
   buildBlueprint,
   buildPreviewUrl,
+  MAX_SAFE_PREVIEW_URL,
+  previewUrlExceedsLimit,
   buildCommentBody,
   buildDescriptionBlock,
   computeNextDescriptionBody,
@@ -330,6 +332,19 @@ test('buildPreviewUrl appends trailing slash to playground URL if missing', () =
   const json = '{"test":1}';
   const url = buildPreviewUrl('https://ateeducacion.github.io/omeka-s-playground', json);
   assert.ok(url.startsWith('https://ateeducacion.github.io/omeka-s-playground/'), 'trailing slash added');
+});
+
+test('previewUrlExceedsLimit flags URLs longer than the safe limit', () => {
+  const shortUrl = 'https://example.com/?blueprint-data=' + 'a'.repeat(100);
+  assert.equal(previewUrlExceedsLimit(shortUrl), false);
+
+  const longUrl =
+    'https://example.com/?blueprint-data=' + 'a'.repeat(MAX_SAFE_PREVIEW_URL);
+  assert.equal(previewUrlExceedsLimit(longUrl), true);
+
+  // Respects a custom threshold.
+  assert.equal(previewUrlExceedsLimit('abcdef', 5), true);
+  assert.equal(previewUrlExceedsLimit('abc', 5), false);
 });
 
 test('buildCommentBody contains marker, URL, and image', () => {

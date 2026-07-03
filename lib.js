@@ -385,6 +385,24 @@ export function buildPreviewUrl(playgroundUrl, blueprintJson) {
   return `${base}?blueprint-data=${encoded}`;
 }
 
+/**
+ * Largest preview-URL length (in characters) considered safe before web servers
+ * start rejecting the request line. nginx's default `large_client_header_buffers`
+ * caps the request line at 8 KB, so we warn a little under that.
+ * @type {number}
+ */
+export const MAX_SAFE_PREVIEW_URL = 8000;
+
+/**
+ * Returns true when the `?blueprint-data=` preview URL is long enough that a web
+ * server may reject it with HTTP 414 (URI Too Long).
+ * @param {string} url
+ * @param {number} [max=MAX_SAFE_PREVIEW_URL]
+ * @returns {boolean}
+ */
+export const previewUrlExceedsLimit = (url, max = MAX_SAFE_PREVIEW_URL) =>
+  typeof url === 'string' && url.length > max;
+
 function buildPreviewBody(previewUrl, imageUrl, extraText) {
   let body = `## Omeka S Playground Preview
 
