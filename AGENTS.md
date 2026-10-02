@@ -8,7 +8,7 @@ This project is a sibling of [ateeducacion/action-moodle-playground-pr-preview](
 - **Companion project:** `ateeducacion/omeka-s-playground` -- the browser-based Omeka S runtime (PHP-WASM) that this action links to
 - **Sibling action:** `ateeducacion/action-moodle-playground-pr-preview` -- same idea for Moodle plugins
 
-Note: while the two actions share a concept and some behaviors (sticky comment/description management, base64url blueprint encoding, URL-length warning), their code is **not** shared. This repo does **not** have Moodle's `blueprint-file`, `proxy-url`, or core-overlay features -- do not assume they exist here.
+Note: while the two actions share a concept and some behaviors (sticky comment/description management, base64url blueprint encoding, URL-length warning, `blueprint-file`), their code is **not** shared. This repo does **not** have Moodle's `proxy-url` or core-overlay features -- do not assume they exist here.
 
 ## What This Project Does
 
@@ -76,7 +76,8 @@ The code is split into two plain-JavaScript ESM files (CommonJS is only the bund
 3. Resolve PR context:
    - From event payload (pull_request trigger), OR
    - From GitHub API if pr-number input is provided (workflow_run trigger).
-4. buildBlueprint(...) -> synthesize the blueprint object from inputs.
+4. blueprint-file set -> read it, pointBlueprintAtPr(...) and merge blueprint-json last;
+   otherwise buildBlueprint(...) -> synthesize the blueprint object from inputs.
 5. JSON.stringify the blueprint, buildPreviewUrl(...) -> base64url ?blueprint-data= URL.
 6. If previewUrlExceedsLimit(previewUrl) -> core.warning(...) (advisory only, never fails).
 7. setOutput preview-url and mode.
@@ -104,6 +105,7 @@ The code is split into two plain-JavaScript ESM files (CommonJS is only the bund
 | `parseJsonInput(name, value, expectedType)` | 26 | Parses an optional JSON array/object input; throws with a clear message on bad JSON or wrong type |
 | `parseOptionalBoolean(value, name)` | 55 | Parses `true/false`, `1/0`, `yes/no`, `on/off`; returns `undefined` when empty; throws otherwise |
 | `buildBlueprint(zipUrl, title, author, description, options)` | 253 | Synthesizes the full blueprint object from inputs; adds optional sections only when present; applies `blueprint-json` as a deep-merge override last; dedups `modules`/`themes` |
+| `pointBlueprintAtPr(blueprint, zipUrl, repoName)` | -- | Points the modules/themes whose source is a GitHub archive ZIP of `repoName` (owner ignored; string or `{ type, url }` source) at `zipUrl`; returns `{ blueprint, replaced }` |
 | `buildPreviewUrl(playgroundUrl, blueprintJson)` | 380 | Base64url-encodes the blueprint JSON and appends it as `?blueprint-data=`; ensures a trailing slash on the base |
 | `MAX_SAFE_PREVIEW_URL` | 394 | Constant (see Key Constants) |
 | `previewUrlExceedsLimit(url, max)` | 403 | Returns `true` when a preview URL is long enough to risk HTTP 414 |
@@ -113,7 +115,7 @@ The code is split into two plain-JavaScript ESM files (CommonJS is only the bund
 | `computeNextDescriptionBody(currentBody, marker, block, options)` | 477 | Computes the next PR body; returns `null` to leave it untouched (user placeholder detected, or markers removed with `restoreIfRemoved=false`) |
 | `removeDescriptionBlock(currentBody, marker)` | 514 | Strips the managed block from a PR body (used to clean up when switching to comment mode) |
 
-Non-exported helpers in `lib.js`: `isPlainObject`, `inferAddonNameFromZipUrl`, `normalizeAddonEntry`, `dedupeAddons`, `buildPrimaryAddon`, `mergeBlueprint`, `buildPreviewBody`, `escapeRegex`.
+`mergeBlueprint` is exported too (used for `blueprint-file`). Non-exported helpers in `lib.js`: `isPlainObject`, `githubArchiveRepo`, `inferAddonNameFromZipUrl`, `normalizeAddonEntry`, `dedupeAddons`, `buildPrimaryAddon`, `buildPreviewBody`, `escapeRegex`.
 
 ### Blueprint Format
 
@@ -215,6 +217,7 @@ Sets the `rendered-description` output.
 | `login-username` | no | -- | Deprecated alias for `login-email` |
 | `login-password` | no | -- | Blueprint `login.password` |
 | `blueprint-json` | no | -- | JSON object deep-merged last into the generated blueprint (override layer) |
+| `blueprint-file` | no | -- | Path to the repository blueprint; replaces the generated blueprint, with this repository's add-ons pointed at `zip-url` |
 | `mode` | no | `comment` | `comment` or `append-to-description` |
 | `extra-text` | no | -- | Text/HTML appended after the preview (e.g. testing instructions) |
 | `restore-button-if-removed` | no | `true` | In `append-to-description` mode, restore the block if the PR author removed it |

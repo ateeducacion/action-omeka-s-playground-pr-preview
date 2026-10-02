@@ -71,11 +71,16 @@ export function parseOptionalBoolean(value, name) {
   );
 }
 
-function inferAddonNameFromZipUrl(zipUrl) {
+/**
+ * The repository name of a GitHub archive ZIP URL
+ * (`https://github.com/OWNER/REPO/archive/...`), or undefined for any other URL.
+ * @param {string} zipUrl
+ * @returns {string | undefined}
+ */
+function githubArchiveRepo(zipUrl) {
   try {
     const url = new URL(zipUrl);
     const segments = url.pathname.split('/').filter(Boolean);
-
     if (
       ['github.com', 'www.github.com', 'codeload.github.com'].includes(
         url.hostname
@@ -85,6 +90,20 @@ function inferAddonNameFromZipUrl(zipUrl) {
     ) {
       return decodeURIComponent(segments[1]).trim();
     }
+  } catch {
+    // not a URL
+  }
+  return undefined;
+}
+
+function inferAddonNameFromZipUrl(zipUrl) {
+  try {
+    const repoName = githubArchiveRepo(zipUrl);
+    if (repoName) {
+      return repoName;
+    }
+    const url = new URL(zipUrl);
+    const segments = url.pathname.split('/').filter(Boolean);
 
     const fileName = decodeURIComponent(segments.at(-1) || '')
       .replace(/\.zip$/iu, '')
@@ -130,6 +149,11 @@ function normalizeAddonEntry(addon, name) {
   }
 
   if ('source' in normalized) {
+    // spec v0.1: a single string (ZIP URL, git URL, gh:owner/repo)
+    if (typeof normalized.source === 'string' && normalized.source.trim()) {
+      normalized.source = normalized.source.trim();
+      return normalized;
+    }
     if (!isPlainObject(normalized.source)) {
       throw new Error(`Each object entry in "${name}" must have a valid "source".`);
     }
@@ -219,7 +243,44 @@ function buildPrimaryAddon(zipUrl, addonName, addonType, addonState) {
   };
 }
 
-function mergeBlueprint(baseValue, overrideValue) {
+/**
+ * Points the add-ons of a repository blueprint at the PR ZIP: every module or
+ * theme whose source is a GitHub archive URL of `repoName` gets `zipUrl`. The
+ * owner is ignored, so the URLs still match on forks. Both the spec v0.1
+ * string source and the legacy `{ type: "url", url }` object are handled.
+ * @param {object} blueprint
+ * @param {string} zipUrl
+ * @param {string} repoName
+ * @returns {{ blueprint: object, replaced: number }}
+ */
+export function pointBlueprintAtPr(blueprint, zipUrl, repoName) {
+  const pointed = structuredClone(blueprint);
+  let replaced = 0;
+  for (const key of ['modules', 'themes']) {
+    if (!Array.isArray(pointed[key])) {
+      continue;
+    }
+    pointed[key] = pointed[key].map((entry) => {
+      if (!isPlainObject(entry)) {
+        return entry;
+      }
+      const isString = typeof entry.source === 'string';
+      const sourceUrl = isString ? entry.source : entry.source?.url;
+      const sourceRepo = typeof sourceUrl === 'string' ? githubArchiveRepo(sourceUrl) : undefined;
+      if (!sourceRepo || sourceRepo.toLowerCase() !== repoName.toLowerCase()) {
+        return entry;
+      }
+      replaced++;
+      return {
+        ...entry,
+        source: isString ? zipUrl : { ...entry.source, url: zipUrl },
+      };
+    });
+  }
+  return { blueprint: pointed, replaced };
+}
+
+export function mergeBlueprint(baseValue, overrideValue) {
   if (overrideValue === undefined) {
     return baseValue;
   }
