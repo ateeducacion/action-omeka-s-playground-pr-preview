@@ -89,6 +89,22 @@ It generates a base64url-encoded `blueprint-data` payload compatible with the Om
        "debug":{"enabled":true}}
 ```
 
+### Use the repository blueprint
+
+If the repository already has a `blueprint.json` (for example the one behind its "Try in your browser" link), reuse it. Every module or theme whose source is a GitHub archive ZIP of this repository is pointed at `zip-url`; the owner is ignored, so it also matches on forks. Pin `zip-url` to the PR head commit: Playground caches add-ons by URL, so a branch ZIP would keep serving an old copy.
+
+```yaml
+- uses: actions/checkout@v4
+- name: Add Omeka S Playground preview
+  uses: ateeducacion/action-omeka-s-playground-pr-preview@v1
+  with:
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    zip-url: https://github.com/${{ github.repository }}/archive/${{ github.event.pull_request.head.sha }}.zip
+    blueprint-file: blueprint.json
+```
+
+With `blueprint-file`, the blueprint inputs that build a blueprint (`addon-*`, `title`, `extra-*`, `site-*`, `login-*`, …) are not used; `blueprint-json` is still merged last. Both source forms are recognised: the `source` string of the [shared blueprint format](https://github.com/omeka-s-contrib/omeka-s-blueprints) and the older `{ "type": "url", "url": … }` object.
+
 ## Inputs
 
 | Input | Required | Default | Description |
@@ -122,6 +138,7 @@ It generates a base64url-encoded `blueprint-data` payload compatible with the Om
 | `login-email` | ❌ | — | Blueprint `login.email` value |
 | `login-password` | ❌ | — | Blueprint `login.password` value |
 | `blueprint-json` | ❌ | — | JSON object merged last into the generated blueprint |
+| `blueprint-file` | ❌ | — | Path to the repository blueprint (needs `actions/checkout`). Its add-ons from this repository are pointed at `zip-url`, and it replaces the generated blueprint |
 
 Legacy compatibility aliases still accepted:
 

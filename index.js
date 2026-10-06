@@ -1,8 +1,11 @@
+import * as fs from 'node:fs';
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 import {
   buildBlueprint,
   buildPreviewUrl,
+  mergeBlueprint,
+  pointBlueprintAtPr,
   MAX_SAFE_PREVIEW_URL,
   previewUrlExceedsLimit,
   buildCommentBody,
@@ -15,6 +18,27 @@ import {
 
 const MODE_COMMENT = 'comment';
 const MODE_APPEND = 'append-to-description';
+
+/**
+ * Reads the repository's own blueprint and points its add-on at the PR ZIP.
+ * The discrete blueprint inputs do not apply; `blueprint-json` is still merged last.
+ */
+function blueprintFromFile(path, zipUrl, repo, blueprintOverride) {
+  let blueprint;
+  try {
+    blueprint = parseJsonInput('blueprint-file', fs.readFileSync(path, 'utf8'), 'object');
+  } catch (error) {
+    throw new Error(`Cannot use blueprint file "${path}": ${error.message}`);
+  }
+  const { blueprint: pointed, replaced } = pointBlueprintAtPr(blueprint, zipUrl, repo);
+  if (replaced === 0) {
+    core.warning(
+      `No module or theme in "${path}" has a GitHub archive source for "${repo}", ` +
+        'so the preview does not load the code of this PR.'
+    );
+  }
+  return mergeBlueprint(pointed, blueprintOverride);
+}
 
 async function run() {
   try {
@@ -76,6 +100,7 @@ async function run() {
       parseJsonInput('site-json', core.getInput('site-json'), 'object');
     const blueprintOverride =
       parseJsonInput('blueprint-json', core.getInput('blueprint-json'), 'object');
+    const blueprintFile = (core.getInput('blueprint-file') || '').trim();
     const landingPage = core.getInput('landing-page') || undefined;
     const debugEnabled = parseOptionalBoolean(
       core.getInput('debug-enabled'),
@@ -119,7 +144,9 @@ async function run() {
     const prNumber = pullRequest.number;
 
     // --- Build blueprint and preview URL ---
-    const blueprint = buildBlueprint(zipUrl, title, author, description, {
+    const blueprint = blueprintFile
+      ? blueprintFromFile(blueprintFile, zipUrl, repo, blueprintOverride)
+      : buildBlueprint(zipUrl, title, author, description, {
       addonName,
       addonType,
       addonState,

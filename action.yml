@@ -96,6 +96,9 @@ inputs:
   blueprint-json:
     description: 'Optional JSON object merged last into the generated blueprint to add or override advanced settings'
     required: false
+  blueprint-file:
+    description: 'Optional path to the repository blueprint JSON (requires actions/checkout). Used instead of the generated blueprint; its modules and themes whose source is a GitHub archive ZIP of this repository (owner ignored) are pointed at zip-url.'
+    required: false
   mode:
     description: 'How to publish the preview: `comment` (default) or `append-to-description`'
     required: false

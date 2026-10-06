@@ -19925,6 +19925,9 @@ var require_fast_content_type_parse = __commonJS({
   }
 });
 
+// index.js
+var fs3 = __toESM(require("node:fs"), 1);
+
 // node_modules/@actions/core/lib/command.js
 var os = __toESM(require("os"), 1);
 
@@ -24190,7 +24193,7 @@ function parseOptionalBoolean(value, name) {
     `Input "${name}" must be a boolean value such as "true" or "false".`
   );
 }
-function inferAddonNameFromZipUrl(zipUrl) {
+function githubArchiveRepo(zipUrl) {
   try {
     const url = new URL(zipUrl);
     const segments = url.pathname.split("/").filter(Boolean);
@@ -24199,6 +24202,18 @@ function inferAddonNameFromZipUrl(zipUrl) {
     ) && segments.length >= 2 && (segments.includes("archive") || segments.includes("zip"))) {
       return decodeURIComponent(segments[1]).trim();
     }
+  } catch {
+  }
+  return void 0;
+}
+function inferAddonNameFromZipUrl(zipUrl) {
+  try {
+    const repoName = githubArchiveRepo(zipUrl);
+    if (repoName) {
+      return repoName;
+    }
+    const url = new URL(zipUrl);
+    const segments = url.pathname.split("/").filter(Boolean);
     const fileName = decodeURIComponent(segments.at(-1) || "").replace(/\.zip$/iu, "").trim();
     return fileName || void 0;
   } catch {
@@ -24235,6 +24250,10 @@ function normalizeAddonEntry(addon, name) {
     normalized.state = normalized.state.trim();
   }
   if ("source" in normalized) {
+    if (typeof normalized.source === "string" && normalized.source.trim()) {
+      normalized.source = normalized.source.trim();
+      return normalized;
+    }
     if (!isPlainObject3(normalized.source)) {
       throw new Error(`Each object entry in "${name}" must have a valid "source".`);
     }
@@ -24300,6 +24319,32 @@ function buildPrimaryAddon(zipUrl, addonName, addonType, addonState) {
       }
     }
   };
+}
+function pointBlueprintAtPr(blueprint, zipUrl, repoName) {
+  const pointed = structuredClone(blueprint);
+  let replaced = 0;
+  for (const key of ["modules", "themes"]) {
+    if (!Array.isArray(pointed[key])) {
+      continue;
+    }
+    pointed[key] = pointed[key].map((entry) => {
+      if (!isPlainObject3(entry)) {
+        return entry;
+      }
+      const isString = typeof entry.source === "string";
+      const sourceUrl = isString ? entry.source : entry.source?.url;
+      const sourceRepo = typeof sourceUrl === "string" ? githubArchiveRepo(sourceUrl) : void 0;
+      if (!sourceRepo || sourceRepo.toLowerCase() !== repoName.toLowerCase()) {
+        return entry;
+      }
+      replaced++;
+      return {
+        ...entry,
+        source: isString ? zipUrl : { ...entry.source, url: zipUrl }
+      };
+    });
+  }
+  return { blueprint: pointed, replaced };
 }
 function mergeBlueprint(baseValue, overrideValue) {
   if (overrideValue === void 0) {
@@ -24492,6 +24537,21 @@ function removeDescriptionBlock(currentBody, marker) {
 // index.js
 var MODE_COMMENT = "comment";
 var MODE_APPEND = "append-to-description";
+function blueprintFromFile(path, zipUrl, repo, blueprintOverride) {
+  let blueprint;
+  try {
+    blueprint = parseJsonInput("blueprint-file", fs3.readFileSync(path, "utf8"), "object");
+  } catch (error2) {
+    throw new Error(`Cannot use blueprint file "${path}": ${error2.message}`);
+  }
+  const { blueprint: pointed, replaced } = pointBlueprintAtPr(blueprint, zipUrl, repo);
+  if (replaced === 0) {
+    warning(
+      `No module or theme in "${path}" has a GitHub archive source for "${repo}", so the preview does not load the code of this PR.`
+    );
+  }
+  return mergeBlueprint(pointed, blueprintOverride);
+}
 async function run() {
   try {
     const token = getInput("github-token", { required: true });
@@ -24537,6 +24597,7 @@ async function run() {
     const items = parseJsonInput("items-json", getInput("items-json"), "array");
     const site = parseJsonInput("site-json", getInput("site-json"), "object");
     const blueprintOverride = parseJsonInput("blueprint-json", getInput("blueprint-json"), "object");
+    const blueprintFile = (getInput("blueprint-file") || "").trim();
     const landingPage = getInput("landing-page") || void 0;
     const debugEnabled = parseOptionalBoolean(
       getInput("debug-enabled"),
@@ -24572,7 +24633,7 @@ async function run() {
       return;
     }
     const prNumber = pullRequest.number;
-    const blueprint = buildBlueprint(zipUrl, title, author, description, {
+    const blueprint = blueprintFile ? blueprintFromFile(blueprintFile, zipUrl, repo, blueprintOverride) : buildBlueprint(zipUrl, title, author, description, {
       addonName,
       addonType,
       addonState,

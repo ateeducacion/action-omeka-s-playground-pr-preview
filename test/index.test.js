@@ -13,6 +13,7 @@ import {
   descriptionBlockPattern,
   parseJsonInput,
   parseOptionalBoolean,
+  pointBlueprintAtPr,
 } from '../lib.js';
 
 test('toBase64Url produces valid base64url (no +, /, or = chars)', () => {
@@ -496,4 +497,45 @@ test('removeDescriptionBlock is a no-op when markers are absent', () => {
     removeDescriptionBlock('Just a plain body', 'omeka-s-playground-preview'),
     'Just a plain body'
   );
+});
+
+test('pointBlueprintAtPr points this repository add-ons at the PR ZIP, in both source forms', () => {
+  const zipUrl = 'https://github.com/ateeducacion/omeka-s-Foo/archive/abc123.zip';
+  const blueprint = {
+    $schema: 'https://example.org/schema.json',
+    landingPage: '/admin/foo',
+    modules: [
+      'Common',
+      // legacy object form
+      { name: 'Foo', state: 'activate', source: { type: 'url', url: 'https://github.com/ateeducacion/omeka-s-Foo/archive/refs/heads/main.zip' } },
+      // another repository is left alone
+      { name: 'Bar', source: { type: 'url', url: 'https://github.com/ateeducacion/omeka-s-Bar/archive/refs/heads/main.zip' } },
+    ],
+    // v0.1 string form; the owner is ignored so forks match
+    themes: [{ name: 'foo', source: 'https://github.com/someone/OMEKA-S-FOO/archive/refs/heads/main.zip' }],
+  };
+
+  const { blueprint: pointed, replaced } = pointBlueprintAtPr(blueprint, zipUrl, 'omeka-s-Foo');
+
+  assert.equal(replaced, 2);
+  assert.deepEqual(pointed.modules[1].source, { type: 'url', url: zipUrl });
+  assert.equal(pointed.modules[2].source.url, 'https://github.com/ateeducacion/omeka-s-Bar/archive/refs/heads/main.zip');
+  assert.equal(pointed.themes[0].source, zipUrl);
+  assert.equal(pointed.landingPage, '/admin/foo');
+  // the input is not mutated
+  assert.equal(blueprint.themes[0].source, 'https://github.com/someone/OMEKA-S-FOO/archive/refs/heads/main.zip');
+});
+
+test('pointBlueprintAtPr reports when nothing points to the repository', () => {
+  const { replaced } = pointBlueprintAtPr({ modules: ['Common'] }, 'https://x/y.zip', 'omeka-s-Foo');
+  assert.equal(replaced, 0);
+});
+
+test('buildBlueprint accepts the v0.1 string source in extra add-ons', () => {
+  const blueprint = buildBlueprint(
+    'https://github.com/ateeducacion/omeka-s-Foo/archive/refs/heads/main.zip',
+    't', 'a', 'd',
+    { addonName: 'Foo', extraModules: [{ name: 'Mapping', source: ' https://example.org/Mapping.zip ' }] }
+  );
+  assert.equal(blueprint.modules[1].source, 'https://example.org/Mapping.zip');
 });
