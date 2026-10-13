@@ -51,10 +51,10 @@ Unlike the Moodle sibling, source lives at the repo root (`index.js` + `lib.js`)
 
 ```bash
 npm install
-npm run build    # runs: esbuild index.js --bundle --platform=node --target=node20 --format=cjs --outfile=dist/index.cjs
+npm run build    # runs: esbuild index.js --bundle --platform=node --target=node24 --format=cjs --outfile=dist/index.cjs
 ```
 
-The build bundles `index.js` and its `node_modules` dependencies into a single CommonJS file `dist/index.cjs`. `action.yml` runs `dist/index.cjs` directly (`runs.using: node20`, `runs.main: dist/index.cjs`). **Always rebuild and commit `dist/index.cjs` after editing `index.js` or `lib.js`** -- the CI `verify-dist` job fails the build if the committed bundle is out of sync.
+The build bundles `index.js` and its `node_modules` dependencies into a single CommonJS file `dist/index.cjs`. `action.yml` runs `dist/index.cjs` directly (`runs.using: node24`, `runs.main: dist/index.cjs`). **Always rebuild and commit `dist/index.cjs` after editing `index.js` or `lib.js`** -- the CI `verify-dist` job fails the build if the committed bundle is out of sync.
 
 ## Source Code Architecture
 
