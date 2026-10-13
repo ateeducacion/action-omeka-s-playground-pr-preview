@@ -306,7 +306,7 @@ seed data) so it fits under the limit.
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 24+
 - npm
 
 ### Install dependencies
